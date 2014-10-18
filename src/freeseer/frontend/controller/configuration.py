@@ -41,6 +41,15 @@ from freeseer.frontend.controller.server import http_response
 log = logging.getLogger(__name__)
 configuration = Blueprint('configuration', __name__)
 
+plugins_map = {
+    "audioinput": "AudioInput",
+    "audiomixer": "AudioMixer",
+    "videoinput": "VideoInput",
+    "videomixer": "VideoMixer",
+    "importer": "Importer",
+    "output": "Output"
+}
+
 @configuration.before_app_first_request
 def configure_configuration():
     """
@@ -107,8 +116,10 @@ def get_plugins(plugins):
     """
     Returns available plugins for :plugins type {audio, video, file, stream}.
     """
+    plugins_type = plugins_map[plugins]
+    available = configuration.plugin_manager.get_plugins_of_category(plugins_type)
     log.debug('GET /configuration/recording/{0}', plugins)
-    return {}
+    return { 'plugins': available }
 
 
 @configuration.route('/configuration/recording/<string:plugins>', methods=['PUT'])
