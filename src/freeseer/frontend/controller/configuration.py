@@ -50,6 +50,7 @@ plugins_map = {
     "output": "Output"
 }
 
+
 @configuration.before_app_first_request
 def configure_configuration():
     """
@@ -58,10 +59,10 @@ def configure_configuration():
     """
     signal.signal(signal.SIGINT, teardown_configuration)
     configuration.profile = settings.profile_manager.get()
-    configuration.config = configuration.record_profile.get_config('freeseer.conf',
-                                                                   settings.FreeseerConfig,
-                                                                   storage_args=['Global'],
-                                                                   read_only=True)
+    configuration.config = configuration.profile.get_config('freeseer.conf',
+                                                            settings.FreeseerConfig,
+                                                            storage_args=['Global'],
+                                                            read_only=True)
     configuration.plugin_manager = PluginManager(configuration.profile)
 
 
@@ -79,7 +80,8 @@ def get_general_configuration():
     Returns the general configuration.
     """
     log.debug('GET /configuration/general')
-    return {}
+    return {'default_language': configuration.config.default_language,
+            'auto_hide': configuration.config.auto_hide}
 
 
 @configuration.route('/configuration/general', methods=['PUT'])
@@ -98,7 +100,12 @@ def get_recording_configuration():
     Returns the recording configuration.
     """
     log.debug('GET /configuration/recording')
-    return {}
+    return {'file_format': configuration.config.record_to_file_plugin,
+            'record_to_file': configuration.config.record_to_file,
+            'audio_input': configuration.config.enable_audio_recording,
+            'audiomixer': configuration.config.audiomixer,
+            'video_input': configuration.config.enable_video_recording,
+            'videomixer': configuration.config.videomixer}
 
 
 @configuration.route('/configuration/recording', methods=['PUT'])
@@ -117,9 +124,9 @@ def get_plugins(plugins):
     Returns available plugins for :plugins type {audio, video, file, stream}.
     """
     plugins_type = plugins_map[plugins]
-    available = configuration.plugin_manager.get_plugins_of_category(plugins_type)
+    names = [plugin.name for plugin in configuration.plugin_manager.get_plugins_of_category(plugins_type)]
     log.debug('GET /configuration/recording/{0}', plugins)
-    return { 'plugins': available }
+    return {'plugins': names}
 
 
 @configuration.route('/configuration/recording/<string:plugins>', methods=['PUT'])
