@@ -37,8 +37,23 @@ from freeseer.frontend.controller import validate
 from freeseer.frontend.controller.server import HTTPError
 from freeseer.frontend.controller.server import ServerError
 from freeseer.frontend.controller.server import http_response
+
 log = logging.getLogger(__name__)
 configuration = Blueprint('configuration', __name__)
+
+@configuration.before_app_first_request
+def configure_configuration():
+    """
+    Initializes the profile, configuration, and plugin manager.
+    Runs on first call to server.
+    """
+    signal.signal(signal.SIGINT, teardown_configuration)
+    configuration.profile = settings.profile_manager.get()
+    configuration.config = configuration.record_profile.get_config('freeseer.conf',
+                                                                   settings.FreeseerConfig,
+                                                                   storage_args=['Global'],
+                                                                   read_only=True)
+    configuration.plugin_manager = PluginManager(configuration.profile)
 
 
 def teardown_configuration(signum, frame):
